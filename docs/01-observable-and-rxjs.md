@@ -534,6 +534,170 @@ import { map } from 'rxjs/operator/map';
 Observable::of(1,2,3)::map(x => x + '!!!'); // etc
 ```
 
+## Subject
+
+### 单播与广播
+
+前文讲到，只有当调用`.subscribe`时才运行初始化函数。因此当多次`.subscribe`同一个`Observable`实例时，初始化函数将被调用多次：[Demo](http://jsbin.com/baciqem/edit?js,console,output)。
+
+```javascript
+const observable = new Rx.Observable((observer) => {
+  console.log('start');
+  observer.next(1);
+});
+
+observable  
+  .subscribe({
+    next: data => console.log(data),
+    error: e => console.error(e),
+    complete: () => console.log('complete')
+  });
+
+observable  
+  .subscribe({
+    next: data => console.log(data),
+    error: e => console.error(e),
+    complete: () => console.log('complete')
+  });
+```
+
+可以看出，`Observable`是“单播”的，每个`.subscribe`拥有自己的初始化函数运行状态，彼此之间互相独立。
+
+在`RxJS`中，还提供了用于实现“广播”的类：`Subject`。
+
+### Subject
+
+首先，`Subject`也是一种`Observable`。因此可以调用`.subscribe`订阅数据流，特殊的是`Subject`的`subscribe`会维护一组`subscribion`——如同`EventEmitter`的`addListener`一样——每当有新数据时将依次调用这些`subscribion`，实现了广播。
+
+这是一个简单的例子：[Demo](http://jsbin.com/bepuwuh/edit?js,console,output)。
+
+```javascript
+const subject = new Rx.Subject();
+
+subject.subscribe({
+  next: data => console.log('observerA', data),
+  error: e => console.error(e),
+  complete: () => console.log('complete')
+});
+subject.subscribe({
+  next: data => console.log('observerB', data),
+  error: e => console.error(e),
+  complete: () => console.log('complete')
+});
+
+subject.next(1);
+subject.next(2);
+```
+
+其次，`Subject`也是一种`Observer`。通过调用`.next`、`.error`、`complete`方法，可以向数据流中写入新数据。这意味着`Subject`可以作为另一个`Observable`的`.subscribe`方法的参数：[Demo](http://jsbin.com/figehip/edit?js,console,output)。
+
+```javascript
+const subject = new Rx.Subject();
+
+// subject.subscribe(...)
+
+const observable = Rx.Observable.interval(1000);
+
+observable.subscribe(subject);
+```
+
+这可以很方便的将一个单播的`Observable`转化为广播的`Subject`。
+
+### 冷与热
+
+*逝者如斯夫，不舍昼夜。——孔子《论语》*
+
+`Subject`除了将“单播”变化为“广播”，还将数据流从“冷”（`cold`）变“热”（`hot`）。
+
+调用`.subscribe`与`.next`的顺序很重要，否则会漏掉对数据的订阅。在这个例子中，`observerA`能输出`1`和`2`，而`observerB`只能输出`2`：[Demo](http://jsbin.com/cokexo/edit?js,console,output)。
+
+```javascript
+const subject = new Rx.Subject();
+
+subject.subscribe({
+  next: data => console.log('observerA', data),
+  error: e => console.error(e),
+  complete: () => console.log('complete')
+});
+
+subject.next(1);
+
+subject.subscribe({
+  next: data => console.log('observerB', data),
+  error: e => console.error(e),
+  complete: () => console.log('complete')
+});
+
+
+subject.next(2);
+```
+
+“热”的数据流无论是否被订阅，它都将初始化，并开始产生数据；而“冷”的数据流是惰性求值的，被订阅后才产生数据。
+
+“冷”、“热”数据流在有着不同的适用场景，例如这里有一个简单的`WebSocket`通信例子：[Demo](http://jsbin.com/goqabi/edit?js,console,output)。
+
+```javascript
+const observable = new Rx.Observable((observer) => {
+  const socket = new WebSocket('wss://echo.websocket.org');
+  socket.addEventListener('message', (e) => observer.next(e));
+  socket.addEventListener('open', () => socket.send('hello'));
+  return () => socket.close();
+});
+
+observable.subscribe({
+  next: event => console.log('observerA', event.data),
+  error: e => console.error(e),
+  complete: () => console.log('complete')
+});
+
+observable.subscribe({
+  next: event => console.log('observerB', event.data),
+  error: e => console.error(e),
+  complete: () => console.log('complete')
+});
+```
+
+由于使用了“冷”数据流，每次调用`.subscribe`时都会重新创建一条`WebSocket`连接，很显然这样做浪费了不必要的网络消耗，因为我们只是希望同样的数据能够多次订阅。
+
+使用“热”数据流将更加合适：[Demo](http://jsbin.com/zuwunu/edit?js,console,output)。
+
+这里使用了`.share`运算符，它实现的功能与`Subject`相同。通过使用“热”数据流，仅需要创建一条`WebSocket`连接即可实现多次订阅。
+
+### ReplaySubject
+
+需要注意的是，如果在“热”数据流开始产生数据后才进行`.subscribe`调用，将可能错过数据，通过这个例子可以很清楚的看到这个问题：[Demo](http://jsbin.com/luvawi/edit?js,console,output)。
+
+因此`RxJS`提供了带“回放”功能的`Subject`——`ReplaySubject`。
+
+`ReplaySubject`支持两种回放策略——数量或时间，这是一个根据数量回放的例子，它将提供回放最后3个数据的功能：[Demo](http://jsbin.com/zuwunu/edit?js,console,output)。
+
+```javascript
+const subject = new Rx.ReplaySubject(3);
+
+subject.subscribe({
+  next: data => console.log('observerA', data),
+  error: e => console.error(e),
+  complete: () => console.log('complete')
+});
+
+subject.next(1);
+subject.next(2);
+subject.next(3);
+subject.next(4);
+
+subject.subscribe({
+  next: data => console.log('observerB', data),
+  error: e => console.error(e),
+  complete: () => console.log('complete')
+});
+
+subject.next(5);
+```
+
+而这是一个根据时间窗口回放的例子：[Demo](http://jsbin.com/yakayi/edit?js,console,output)。
+
+**注意：不论使用哪种回放策略，`ReplaySubject`的第一个参数——缓存大小——非常重要，它的默认值为`Infinity`。一个缓存长度为`Infinity`的`ReplaySubject`很容易因忘记调用`.unsubscribe`而产生内存泄露。**
+
 ## 总结
 
 本文以`Observable`为核心介绍了`RxJS`的简单用法，了解了如何创建、变换、订阅一个数据流，以及`RxJS`的各种使用样例。
