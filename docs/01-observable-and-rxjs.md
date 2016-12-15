@@ -546,14 +546,14 @@ const observable = new Rx.Observable((observer) => {
   observer.next(1);
 });
 
-observable  
+observable
   .subscribe({
     next: data => console.log(data),
     error: e => console.error(e),
     complete: () => console.log('complete')
   });
 
-observable  
+observable
   .subscribe({
     next: data => console.log(data),
     error: e => console.error(e),
@@ -609,7 +609,9 @@ observable.subscribe(subject);
 
 `Subject`除了将“单播”变化为“广播”，还将数据流从“冷”（`cold`）变“热”（`hot`）。
 
-调用`.subscribe`与`.next`的顺序很重要，否则会漏掉对数据的订阅。在这个例子中，`observerA`能输出`1`和`2`，而`observerB`只能输出`2`：[Demo](http://jsbin.com/cokexo/edit?js,console,output)。
+“热”的数据流无论是否被订阅，它都将初始化，并开始产生数据；而“冷”的数据流是惰性求值的，被订阅后才产生数据。
+
+对“热”数据流的订阅时机很重要，否则会漏掉对数据的订阅。在这个例子中，`observerA`能输出`1`和`2`，而`observerB`只能输出`2`：[Demo](http://jsbin.com/cokexo/edit?js,console,output)。
 
 ```javascript
 const subject = new Rx.Subject();
@@ -631,8 +633,6 @@ subject.subscribe({
 
 subject.next(2);
 ```
-
-“热”的数据流无论是否被订阅，它都将初始化，并开始产生数据；而“冷”的数据流是惰性求值的，被订阅后才产生数据。
 
 “冷”、“热”数据流在有着不同的适用场景，例如这里有一个简单的`WebSocket`通信例子：[Demo](http://jsbin.com/goqabi/edit?js,console,output)。
 
@@ -659,7 +659,18 @@ observable.subscribe({
 
 由于使用了“冷”数据流，每次调用`.subscribe`时都会重新创建一条`WebSocket`连接，很显然这样做浪费了不必要的网络消耗，因为我们只是希望同样的数据能够多次订阅。
 
-使用“热”数据流将更加合适：[Demo](http://jsbin.com/zuwunu/edit?js,console,output)。
+使用“热”数据流将更加合适：[Demo](http://jsbin.com/qeqapu/edit?js,console,output)。
+
+```javascript
+const observable = new Rx.Observable((observer) => {
+  const socket = new WebSocket('wss://echo.websocket.org');
+  socket.addEventListener('message', (e) => observer.next(e));
+  socket.addEventListener('open', () => socket.send('hello'));
+  return () => socket.close();
+})
+  .share();
+// observable.subscribe(...)
+```
 
 这里使用了`.share`运算符，它实现的功能与`Subject`相同。通过使用“热”数据流，仅需要创建一条`WebSocket`连接即可实现多次订阅。
 
