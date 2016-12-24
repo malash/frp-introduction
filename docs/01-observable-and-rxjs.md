@@ -373,10 +373,10 @@ throttle与debounce都是前端开发常用的节流方法，`RxJS`中有`.throt
 我们需要有办法能合并三条数据流：[Demo](http://jsbin.com/nenozuj/edit?html,js,output)。
 
 ```javascript
-const $button1 = Rx.Observable.fromEvent(button1, 'click');
-const $button10 = Rx.Observable.fromEvent(button10, 'click');
-const $button100 = Rx.Observable.fromEvent(button100, 'click');
-Rx.Observable.merge($button1, $button10, $button100)
+const button1$ = Rx.Observable.fromEvent(button1, 'click');
+const button10$ = Rx.Observable.fromEvent(button10, 'click');
+const button100$ = Rx.Observable.fromEvent(button100, 'click');
+Rx.Observable.merge(button1$, button10$, button100$)
   .map(event => parseInt(event.target.dataset.value))
   ...
 ```
@@ -456,9 +456,9 @@ Rx.Observable.merge($button1, $button10, $button100)
 首先我们实现了一个`multiplyByTen`函数，它接收一个`Observable`实例，并返回一个新的`observable`实例：[Demo](http://jsbin.com/gonito/edit?js,console)。
 
 ```javascript
-function multiplyByTen($input) {
+function multiplyByTen(input$) {
   return Rx.Observable.create((observer) => {
-    $input.subscribe({
+    input$.subscribe({
       next: (data) => observer.next(data * 10),
       error: (err) => observer.error(err),
       complete: () => observer.complete()
@@ -474,17 +474,17 @@ multiplyByTen(Rx.Observable.interval(1000))
   });
 ```
 
-`multiplyByTen`函数订阅了`$input`数据流，在`.subscribe`中实现了乘以10的计算，并将结果传递给`observer.next`，实现了数据流的转换。
+`multiplyByTen`函数订阅了`input$`数据流，在`.subscribe`中实现了乘以10的计算，并将结果传递给`observer.next`，实现了数据流的转换。
 
->`$input`的前缀`$`代表这是一个`Observable`实例，这种写法参考了[Cycle.js](https://github.com/cyclejs/cyclejs)。
+>`input$`的后缀`$`代表这是一个`Observable`实例，这种写法参考了[Cycle.js](https://github.com/cyclejs/cyclejs)。
 
-`multiplyByTen`函数现在和运算符还有一点小的区别——调用方式，如果我们将`multiplyByTen`函数添加到`Observable.prototype`中，并将`this`赋值给`$input`，就得到了真正的运算符：[Demo](http://jsbin.com/fudehec/edit?js,console)
+`multiplyByTen`函数现在和运算符还有一点小的区别——调用方式，如果我们将`multiplyByTen`函数添加到`Observable.prototype`中，并将`this`赋值给`input$`，就得到了真正的运算符：[Demo](http://jsbin.com/fudehec/edit?js,console)
 
 ```javascript
 Rx.Observable.prototype.multiplyByTen = function() {
-  const $input = this;
+  const input$ = this;
   return Rx.Observable.create((observer) => {
-    $input.subscribe({
+    input$.subscribe({
       next: (data) => observer.next(data * 10),
       error: (err) => observer.error(err),
       complete: () => observer.complete()
@@ -505,9 +505,9 @@ Rx.Observable.interval(1000)
 
 ```javascript
 const multiplyByTen = function() {
-  const $input = this;
+  const input$ = this;
   return Rx.Observable.create((observer) => {
-    $input.subscribe({
+    input$.subscribe({
       next: (data) => observer.next(data * 10),
       error: (err) => observer.error(err),
       complete: () => observer.complete()
