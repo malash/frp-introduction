@@ -144,7 +144,7 @@ function DOMDriver(text$) {
 
 然后修改`main`函数，它接受一个参数`DOMSource`，也就是`DOMDriver`的返回值。使用`switchMapTo`运算符可以实现点击重置的效果：
 
-```jvavascript
+```javascript
 function main(DOMSource) {
   const click$ = DOMSource;
   return {
