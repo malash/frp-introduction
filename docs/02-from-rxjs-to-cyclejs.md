@@ -46,7 +46,7 @@
 
 ```javascript
 Rx.Observable.timer(0, 1000)
-  .map(i => `Secondes elapsed ${i}`)
+  .map(i => `Seconds elapsed ${i}`)
   .subscribe({
     next: text => {
       const container = document.querySelector('.app');
@@ -60,7 +60,7 @@ Rx.Observable.timer(0, 1000)
 ```javascript
 function main() {
   return Rx.Observable.timer(0, 1000)
-    .map(i => `Secondes elapsed ${i}`);
+    .map(i => `Seconds elapsed ${i}`);
 }
 
 function DOMEffect(text$) {
@@ -88,7 +88,7 @@ consoleLogEffect(sink);
 function main() {
   return {
     DOM: Rx.Observable.timer(0, 1000)
-      .map(i => `Secondes elapsed ${i}`),
+      .map(i => `Seconds elapsed ${i}`),
     Log: Rx.Observable.timer(0, 2000)
       .map(i => i * 2)
   }
@@ -178,7 +178,7 @@ function main(DOMSource) {
     DOM: click$
       .startWith(null)
       .switchMapTo(Rx.Observable.timer(0, 1000))
-      .map(i => `Secondes elapsed ${i}`)
+      .map(i => `Seconds elapsed ${i}`)
   }
 }
 ```
@@ -279,7 +279,7 @@ function main(sources) {
     DOM: click$
       .startWith(null)
       .switchMapTo(Rx.Observable.timer(0, 1000))
-      .map(i => `Secondes elapsed ${i}`)
+      .map(i => `Seconds elapsed ${i}`)
   }
 }
 ```
