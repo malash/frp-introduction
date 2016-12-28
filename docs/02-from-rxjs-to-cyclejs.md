@@ -12,6 +12,33 @@
 
 > Cycle.js Github 地址：[https://github.com/cyclejs/cyclejs](https://github.com/cyclejs/cyclejs)
 
+# 背景
+
+`Cycle.js`是一个基于`Observable`的“函数响应式前端框架”。
+
+作为一个现代的前端框架，它具有如下特性：
+
+* Virtual DOM
+* JSX
+* 服务端渲染
+* 组件化
+* MV*框架（Model-View-Intent）
+* 路由
+* 数据流
+* 时间旅行（撤销、回放）
+* 热加载
+* Native
+* 插件化
+
+`Cycle.js`比较类似于 [React](https://facebook.github.io/react/) + [Redux](https://github.com/reactjs/redux) 或者 [Elm](http://elm-lang.org/)：
+
+`React`是`MV*`中的`View`部分，通过`JSX`实现了一套性能不错的`Virtual DOM`机制和组件机制，但它通常需要搭配合适的数据流（如`Flux`、`Redux`）才能成为完整的前端框架；`Redux`很好的通过“单向数据流”实现对`state`的控制，但对于用户交互、数据模型等缺乏足够的抽象，同时大量`switch`的存在也不是非常好的编程范式；而且由于`React`和`Redux`两者割裂，虽然有 [react-redux](https://github.com/reactjs/react-redux) 这样的封装，但依然需要具有四个参数的胶水函数——`connect`，引入了不必要的学习成本。
+
+`Elm`是一个函数响应式框架的实现，`Elm`使用自己的`Elm-Lang`（它是`Haskell`语言的子集），`Elm`实现了多层级的`Model-View-Action-Update`的数据流。但这种数据流比较复杂，加之其函数式的语法，导致其学习成本极高，少有工业界的应用。但`Elm`的数据流思想非常有价值，直接启发了`Cycle.js`和`Redux`诞生。
+
+`Cycle.js`集百家之长，克服了上述技术的大部分问题，保持了简单、纯粹的编程范式。由于`Cycle.js`采用了插件机制（类似于`Koa`），其核心代码简单、高效，值得我们深入学习。
+
+因此在这篇文章中我们将通过将一段`Observable`代码（使用`RxJS`实现）进行不断的改造，最终实现我们自己的`Cycle.js`。当然在最后我们将使用`Cycle.js`官方模块替代自己的代码，以证明它们是等价的。
 
 # main
 
@@ -231,11 +258,13 @@ function run(mainFn, drivers) {
 
 我们获得了一个非常通用的`run`函数，它可以用于不同的`main`和`drivers`，实现了`sinks`和`sources`的循环。如果我们将它单独抽象出来，它就是`Cycle.js`的`@cycle/rxjs-run`包（[链接](https://github.com/cyclejs/cyclejs/tree/master/rxjs-run)）。
 
-最后我们使用`@cycle/rxjs-run`替代我们自己写的`run`函数：[Demo](http://jsbin.com/duhifud/edit?js,output)。
+最后我们使用`@cycle/rxjs-run`替代我们自己写的`run`函数，代码依然运行良好：[Demo](http://jsbin.com/duhifud/edit?js,output)。
 
 ```javascript
 Cycle.run(main, drivers);
 ```
+
+`Cycle.js`的核心非常简单，简单到只包含一个`run`函数，但它却支撑起整个框架的运行。也许你会质疑它太过简单，那么不妨让我们继续实现一个`Virtual DOM`。
 
 # DOM Object
 
@@ -432,26 +461,12 @@ Cycle.run(main, drivers);
 > 由于最新版`Cycle.js`的默认数据流从`RxJS`切换到`XStream`，因此即使使用`cycle/rxjs-run`也需要引入`xstream`。
 > 在`npm`中不需要显式依赖`xstream`，因为`@cycle/dom`会自动依赖`xstream`。
 
-# Cycle.js
+# 总结
 
-终于，通过一步步的修改，我们从一段简单的`RxJS`实现了`Cycle.js`框架（虽然我们的`run`函数、`makeDOMDriver`函数很简单，但其原理与`Cycle.js`是一致的）。
+终于，通过一步步的修改，我们从一段简单的`RxJS`改造出了`Cycle.js`框架，并证明了它们的等价性。
 
-正如本文开头所说，实现逻辑与副作用的分离是我们的目前。显然在`Cycle.js`中，我们只需要编写`main`函数，它一般是纯函数，只包含计算逻辑；而副作用都隐藏在了`Cycle.js`内部，准确讲是`drivers`中。
+正如本文开头所说，实现逻辑与副作用的分离是我们的目的。显然在`Cycle.js`中，我们只需要编写`main`函数，它一般是纯函数，只包含计算逻辑；而副作用都隐藏在了`drivers`中，在实际开发中通常我们不需要自己实现`drivers`，因为`Cycle.js`提供了大量的`drivers`实现，所以可以认为副作用都隐藏在了框架之中。
 
-## 函数式
+在本文我们实现了与`@cycle/dom`类似的`Virtual DOM`，通过这个例子可以发现`Cycle.js`插件机制的强大，只要通过引入不同的`drivers`即可实现各种副作用：`DOM`操作、网络请求、访问存储，甚至可以在`Native`上渲染（[@cycle/react-native](https://github.com/cyclejs/react-native)）。
 
-`Cycle.js`是函数式的，它借助`JavaScript`这门“披着C外衣的Lisp”的语言（出自[JavaScript: 世界上最被误解的语言](http://javascript.crockford.com/zh/javascript.html)）和`RxJS`的`Observable`实现了一个干净的、纯的、函数式的前端框架。
-
-`Cycle.js`受启发于`Elm`（[Elm](http://elm-lang.org/)），后者是一门纯面向函数语言、是`Haskell`语言的子集、同时也启发了`Redux`。随着对`Cycle.js`的深入了解你会发现它与`React`框架和`Redux`单向数据流是如此的相像。
-
-对于函数式编程，其实很多人会有误解：认为函数式编程就一定是没有副作用的。事实上，副作用是普遍存在的，任何程序都不可避免的需要与标准输入输出、鼠标键盘、屏幕输出等打交道，因此任何具有交互功能的程序都不可能不存在副作用。而函数式编程是让我们尽量编写没有副作用的纯函数，并将副作用进行剥离。`Observable`——甚至还有`Promise`——就是函数式编程中的`Monad`（[Monad](http://adit.io/posts/2013-04-17-functors,_applicatives,_and_monads_in_pictures.html)），就像铅桶可以隔离辐射源一样，`Monad`能够把副作用封装起来，避免副作用污染到函数的“纯度”。
-
-## 响应式
-
-`Cycle.js`是响应式的，它“总是能够及时响应用户请求，并且保持很低的延迟”。（出自[响应式编程的基本概念](http://www.infoq.com/cn/news/2016/01/reactive-basics)），是基于“响应式流”——Observable实现的。
-
-`Cycle.js`与`React` + `Redux`相比很大的不同在于：在`Redux`中只有`action`和`state`组成的数据流；而在`Cycle.js`中一切“可变的”都是流——用户交互（鼠标、键盘、触摸屏等）是流、网络请求是流、`model`（数据模型）是流、`state`是流、`DOM`和`RN`（使用`Cycle.js`编写`Native`代码使用的底层驱动）也是流。
-
-这种“面向数据流编程”除了可以利用`Observable`的`push`模型编写更加响应式的代码、更容易的历史和回放、更方便的组件状态传递等，更使我们习惯于“源源不断的数据流”而不是“可变的变量”，变量可能偷偷的改变了但用户无法感知，但数据流的数据总会被订阅和消费。
-
-因此，`Cycle.js`是“函数响应式编程”的一种合适选型。
+正如本文开头所说，`Cycle.js`作为完整的前端框架还拥有很多的特性，篇幅所限不能在此一一列举。在下一篇文章中我们将对`Cycle.js`的设计和使用做更详细的介绍，并探讨`Cycle.js`的工程化问题
