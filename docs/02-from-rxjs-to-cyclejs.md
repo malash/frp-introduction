@@ -427,11 +427,11 @@ function main(sources) {
 }
 ```
 
-`h`函数是一个通用的标签生成函数，`h1`和`span`可以生成特定标签的`DOM`描述对象。这样的`DOM`描述对象看起来更类似于我们熟悉的`HTML`标签了（事实上借助 [babel-plugin-transform-react-jsx](http://babeljs.io/docs/plugins/transform-react-jsx/) 和 [snabbdom-jsx](https://www.npmjs.com/package/snabbdom-jsx) 我们可以使用`jsx`编写它）。
+`h`函数是一个通用的标签生成函数，`h1`和`span`可以生成特定标签的`DOM`描述对象。这样的`DOM`描述对象看起来更类似于我们熟悉的`HTML`标签了（事实上借助 [babel-plugin-transform-react-jsx](http://babeljs.io/docs/plugins/transform-react-jsx/) 和 [snabbdom-jsx](https://www.npmjs.com/package/snabbdom-jsx) 我们可以使用`JSX`编写它）。
 
 最后，我们得到了一个较为通用的`makeDOMDriver`和一些`DOM`相关的函数（`h`、`h1`、`span`），使用这些函数我们可以实现各种`DOM`结构的渲染。
 
-事实上在`Cycle.js`中这些函数都被抽象在`@cycle/dom`包中（[链接](https://github.com/cyclejs/cyclejs/tree/master/dom)），因此是时候使用`@cycle/dom`替代我们自己的函数了：[Demo](http://jsbin.com/xasahih/edit?js,output)。
+现在，让我们使用真正的`Cycle.js`替代这些函数。在`@cycle/dom`包中（[链接](https://github.com/cyclejs/cyclejs/tree/master/dom)）封装了对这些函数的实现，因此是时候使用`@cycle/dom`替代我们自己的函数了：[Demo](http://jsbin.com/xasahih/edit?js,output)。
 
 ```javascript
 const { makeDOMDriver, h1, span } = CycleDOM;
@@ -459,7 +459,10 @@ Cycle.run(main, drivers);
 ```
 
 > 由于最新版`Cycle.js`的默认数据流从`RxJS`切换到`XStream`，因此即使使用`cycle/rxjs-run`也需要引入`xstream`。
-> 在`npm`中不需要显式依赖`xstream`，因为`@cycle/dom`会自动依赖`xstream`。
+
+至此，我们了解了`Virtual DOM`的原理：我们返回一个包含嵌套的`DOM`描述对象，内部保存了绘制`DOM`所需的信息，前端框架根据这个对象操作真实的`DOM`元素。`@cycle/dom`、`react-dom`等都是基于这个原理实现的。
+
+由于频繁的`DOM`操作会产生性能问题，各个框架在实现的时候通常都采样`diff`的形式增量更新，而不是像我们的Demo中那样使用`innerHTML`和`append`。不过由于框架帮我们隐藏了这个细节，通常是不需要去关心的。
 
 # 总结
 
@@ -469,4 +472,4 @@ Cycle.run(main, drivers);
 
 在本文我们实现了与`@cycle/dom`类似的`Virtual DOM`，通过这个例子可以发现`Cycle.js`插件机制的强大，只要通过引入不同的`drivers`即可实现各种副作用：`DOM`操作、网络请求、访问存储，甚至可以在`Native`上渲染（[@cycle/react-native](https://github.com/cyclejs/react-native)）。
 
-正如本文开头所说，`Cycle.js`作为完整的前端框架还拥有很多的特性，篇幅所限不能在此一一列举。在下一篇文章中我们将对`Cycle.js`的设计和使用做更详细的介绍，并探讨`Cycle.js`的工程化问题
+正如本文开头所说，`Cycle.js`作为完整的前端框架还拥有很多的特性，篇幅所限不能在此一一列举。在下一篇文章中我们将对`Cycle.js`的设计和使用做更详细的介绍，并探讨`Cycle.js`的工程化问题，敬请期待。
